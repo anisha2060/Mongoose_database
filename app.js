@@ -163,13 +163,14 @@
 // });
 
 
-
+const jwt=require("jsonwebtoken");
 const express = require("express");
 const bcrypt = require("bcrypt"); // 1️⃣ bcrypt import
 const User = require("./userModel");
 
 const app = express();
 app.use(express.urlencoded({ extended: true }));
+const JWT_SECRET= "SecretToken";
 
 /* ================= SIGNUP ================= */
 app.get("/signup", (req, res) => {
@@ -220,34 +221,59 @@ app.get("/login", (req, res) => {
   `);
 });
 
+// /* ================= LOGIN CHECK ================= */
+
 /* ================= LOGIN CHECK ================= */
 app.post("/login", async (req, res) => {
-  try {
-    const { email, password } = req.body;
+  const user = await User.findOne({ email: req.body.email });
+  if (!user) return res.send("Invalid credentials");
 
-    // 1️⃣ Find user by email
-    const user = await User.findOne({ email });
-    if (!user) return res.send("❌ Invalid email or password");
+  const match = await bcrypt.compare(req.body.password, user.password);
+  if (!match) return res.send("Invalid credentials");
 
-    // 2️⃣ Compare password with hashed password
-    const match = await bcrypt.compare(password, user.password);
-    if (match) {
-      res.redirect("/home");
-    } else {
-      res.send("❌ Invalid email or password");
-    }
-  } catch (err) {
-    console.error(err);
-    res.send("Error during login!");
-  }
+  const token = jwt.sign({ userId: user._id, email: user.email }, JWT_SECRET, {
+    expiresIn: "1h",
+  });
+
+  res.redirect(`/home?token=${token}`);
 });
 
-/* ================= HOME ================= */
-app.get("/home", (req, res) => {
-  res.send("<h1>✅ You are successfully logged in</h1>");
-});
-
+/* ================= SERVER ================= */
 app.listen(3000, () => {
-  console.log("Server running on http://localhost:3000/signup");
+  console.log("Server running at http://localhost:3000/signup");
 });
 
+
+// app.post("/login", async (req, res) => {
+//   try {
+//     const { email, password } = req.body;
+
+//     const user = await User.findOne({ email });
+//     if (!user) return res.send("❌ Invalid email or password");
+
+//     const isMatch = await bcrypt.compare(password, user.password);
+
+//     if (!isMatch) return res.send("❌ Invalid email or password");
+
+//     // ✅ Login success → show user info
+//     res.send(`
+//       <h1>✅ You are successfully logged in</h1>
+//       <h2>Your Information:</h2>
+//       <ul>
+//         <li>First Name: ${user.firstName}</li>
+//         <li>Last Name: ${user.lastName}</li>
+//         <li>Address: ${user.address}</li>
+//         <li>Email: ${user.email}</li>
+//         <li>Password (hashed): ${user.password}</li>
+//       </ul>
+//     `);
+//   } catch (err) {
+//     console.error(err);
+//     res.send("Login error");
+//   }
+// });
+
+// /* ================= SERVER ================= */
+// app.listen(3000, () => {
+//   console.log("Server running at http://localhost:3000/signup");
+// });
