@@ -9,7 +9,7 @@ const JWT_SECRET = "mySuperSecretKey";
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-/* ================= MIDDLEWARE TO VERIFY JWT ================= */
+/* ======================= MIDDLEWARE TO VERIFY JWT ====================== */
 const verifyToken = (req, res, next) => {
   const token = req.headers.authorization?.split(" ")[1];
   if (!token) {
